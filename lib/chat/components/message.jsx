@@ -150,22 +150,33 @@ function ToolCall({ part, className }) {
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/50 rounded-lg"
       >
-        <WrenchIcon size={14} className="text-muted-foreground shrink-0" />
-        <span className="font-medium text-foreground">{displayName}</span>
-        {isDone && (() => {
-          try {
-            const o = typeof part.output === 'string' ? JSON.parse(part.output) : part.output;
-            if (o?.codingAgent || o?.backendApi) {
-              return (
-                <span className="text-xs text-muted-foreground">
-                  {o.codingAgent}{o.backendApi ? ` · ${o.backendApi}` : ''}
-                </span>
-              );
-            }
-          } catch {}
-          return null;
-        })()}
-        <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
+        <WrenchIcon size={14} className="text-muted-foreground shrink-0 mt-0.5" />
+        <span className="flex flex-col min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            <span className="font-medium text-foreground">{displayName}</span>
+            {isDone && (() => {
+              try {
+                const o = typeof part.output === 'string' ? JSON.parse(part.output) : part.output;
+                if (o?.codingAgent || o?.backendApi) {
+                  return (
+                    <span className="text-xs text-muted-foreground">
+                      {o.codingAgent}{o.backendApi ? ` · ${o.backendApi}` : ''}
+                    </span>
+                  );
+                }
+              } catch {}
+              return null;
+            })()}
+          </span>
+          {(() => {
+            const prompt = part.input?.prompt;
+            if (!prompt) return null;
+            return (
+              <span className="text-xs text-muted-foreground whitespace-pre-wrap">{prompt}</span>
+            );
+          })()}
+        </span>
+        <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
           {isRunning && (
             <>
               <SpinnerIcon size={12} />

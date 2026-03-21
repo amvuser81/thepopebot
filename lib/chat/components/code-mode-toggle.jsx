@@ -1,17 +1,19 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { GitBranchIcon, ChevronDownIcon, SpinnerIcon } from './icons.js';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { GitBranchIcon, ChevronDownIcon, SpinnerIcon, XIcon } from './icons.js';
 import { Combobox } from './ui/combobox.js';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from './ui/dropdown-menu.js';
 import { cn } from '../utils.js';
 import { useFeatures } from './features-context.js';
 
 const COMMAND_LABELS = {
+  'commit': 'Commit',
+  'push': 'Push',
   'create-pr': 'Create PR',
-  'draft-pr': 'Create draft PR',
-  'commit-to-main': 'Commit to main',
-  'rebase': 'Rebase branch',
+  'rebase': 'Rebase',
+  'resolve-conflicts': 'Resolve Conflicts',
 };
 
 /**
@@ -32,6 +34,7 @@ const COMMAND_LABELS = {
  * @param {boolean} [props.isInteractiveActive] - Whether interactive container is running
  * @param {object} [props.diffStats] - Diff stats ({ insertions, deletions })
  * @param {Function} [props.onDiffStatsRefresh] - Callback to refresh diff stats
+ * @param {Function} [props.onShowDiff] - Callback to open the diff viewer
  * @param {Function} [props.onWorkspaceUpdate] - Callback to refresh workspace state after mode toggle
  */
 export function CodeModeToggle({
@@ -48,6 +51,7 @@ export function CodeModeToggle({
   isInteractiveActive,
   diffStats,
   onDiffStatsRefresh,
+  onShowDiff,
   onWorkspaceUpdate,
 }) {
   const features = useFeatures();
@@ -140,7 +144,7 @@ export function CodeModeToggle({
             </>
           )}
         </div>
-        {workspace?.id && <WorkspaceCommandButton workspaceId={workspace.id} diffStats={diffStats} onDiffStatsRefresh={onDiffStatsRefresh} />}
+        {workspace?.id && <WorkspaceCommandButton workspaceId={workspace.id} diffStats={diffStats} onDiffStatsRefresh={onDiffStatsRefresh} onShowDiff={onShowDiff} />}
       </div>
     );
   }
@@ -212,41 +216,128 @@ export function CodeModeToggle({
   );
 }
 
-function WorkspaceCommandButton({ workspaceId, diffStats, onDiffStatsRefresh }) {
+function CommandOutputDialog({ title, output, exitCode, running, onClose }) {
+  const outputRef = useRef(null);
+
+  useEffect(() => {
+    if (outputRef.current) {
+      outputRef.current.scrollTop = outputRef.current.scrollHeight;
+    }
+  }, [output]);
+
+  // Close on Escape
+  useEffect(() => {
+    if (running) return;
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [running, onClose]);
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={running ? undefined : onClose}>
+      <div
+        className="bg-background border border-border rounded-lg shadow-lg w-full max-w-xl mx-4 flex flex-col max-h-[70vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <span className="text-sm font-semibold">{title}</span>
+          {!running && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
+            >
+              <XIcon size={16} />
+            </button>
+          )}
+        </div>
+
+        {/* Body */}
+        <div ref={outputRef} className="flex-1 overflow-auto p-4 min-h-[120px]">
+          {running ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <SpinnerIcon size={14} className="animate-spin" />
+              Running...
+            </div>
+          ) : output ? (
+            <pre className="text-xs font-mono whitespace-pre-wrap break-words text-foreground">{output.trim()}</pre>
+          ) : (
+            <span className="text-sm text-muted-foreground">No output</span>
+          )}
+        </div>
+
+        {/* Footer */}
+        {!running && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+            <span className={cn('text-xs font-medium', exitCode === 0 ? 'text-green-500' : 'text-destructive')}>
+              {exitCode === 0 ? 'Completed' : `Exited with code ${exitCode}`}
+            </span>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-xs px-3 py-1.5 border border-border text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function WorkspaceCommandButton({ workspaceId, diffStats, onDiffStatsRefresh, onShowDiff }) {
   const [selectedCommand, setSelectedCommand] = useState('create-pr');
   const [commandRunning, setCommandRunning] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [commandOutput, setCommandOutput] = useState('');
+  const [commandExitCode, setCommandExitCode] = useState(null);
 
   const handleRun = useCallback(async () => {
     if (commandRunning) return;
+
+    if (!(diffStats?.insertions || 0) && !(diffStats?.deletions || 0)) {
+      setDialogOpen(true);
+      setCommandOutput('You have no changes.');
+      setCommandExitCode(1);
+      return;
+    }
+
     setCommandRunning(true);
-    setErrorMessage('');
+    setDialogOpen(true);
+    setCommandOutput('');
+    setCommandExitCode(null);
     try {
       const { runWorkspaceCommand } = await import('../../code/actions.js');
       const result = await runWorkspaceCommand(workspaceId, selectedCommand);
-      if (!result.success) {
-        setErrorMessage(result.message || 'Command failed');
-      }
+      setCommandOutput(result.output || result.message || '');
+      setCommandExitCode(result.exitCode ?? (result.success ? 0 : 1));
       onDiffStatsRefresh?.();
     } catch (err) {
-      setErrorMessage(err.message || 'Command failed');
+      setCommandOutput(err.message || 'Command failed');
+      setCommandExitCode(1);
     } finally {
       setCommandRunning(false);
     }
   }, [workspaceId, selectedCommand, commandRunning]);
 
+  const handleDialogClose = useCallback(() => {
+    setDialogOpen(false);
+  }, []);
+
   return (
     <div className="ml-auto flex items-center">
-      {errorMessage && (
-        <span className="text-xs text-destructive mr-2 truncate max-w-[160px]" title={errorMessage}>
-          {errorMessage}
-        </span>
-      )}
       <div className="flex items-center gap-1.5 shrink-0">
-        <span className="text-xs leading-4 px-2.5 h-[28px] flex items-center gap-1.5 font-medium border border-border rounded-md whitespace-nowrap">
+        <button
+          type="button"
+          onClick={onShowDiff}
+          className="text-xs leading-4 px-2.5 h-[28px] flex items-center gap-1.5 font-medium border border-border rounded-md whitespace-nowrap hover:bg-accent transition-colors cursor-pointer"
+        >
           <span className="text-green-500">+{diffStats?.insertions ?? 0}</span>
           <span className="text-destructive">-{diffStats?.deletions ?? 0}</span>
-        </span>
+        </button>
         <div className="flex items-center">
           <button
             type="button"
@@ -274,23 +365,36 @@ function WorkspaceCommandButton({ workspaceId, diffStats, onDiffStatsRefresh }) 
               </button>
             </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="end" className="whitespace-nowrap">
+            <DropdownMenuItem onClick={() => setSelectedCommand('commit')}>
+              Commit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSelectedCommand('push')}>
+              Push
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setSelectedCommand('create-pr')}>
               Create PR
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSelectedCommand('draft-pr')}>
-              Create draft PR
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setSelectedCommand('commit-to-main')}>
-              Commit to main
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setSelectedCommand('rebase')}>
-              Rebase branch
+              Rebase
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSelectedCommand('resolve-conflicts')}>
+              Resolve Conflicts
             </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
+
+      {dialogOpen && (
+        <CommandOutputDialog
+          title={COMMAND_LABELS[selectedCommand]}
+          output={commandOutput}
+          exitCode={commandExitCode}
+          running={commandRunning}
+          onClose={handleDialogClose}
+        />
+      )}
     </div>
   );
 }

@@ -32,18 +32,33 @@ headless/6_agent-run.sh       → source agents/${AGENT}/run.sh   (agent-specifi
 
 `command/*` runtimes are ephemeral containers that run workspace commands on an existing volume. They don't clone — the workspace already exists.
 
-| Runtime | Purpose |
-|---------|---------|
-| `command/commit-to-main` | Stage all changes, generate commit message via agent, push |
-| `command/create-pr` | Push feature branch, generate PR title+body via agent. Set `DRAFT=1` for draft PR. |
-| `command/rebase` | Fetch and rebase onto base branch. Agent resolves conflicts if any. |
+| Runtime | Purpose | Agent? |
+|---------|---------|--------|
+| `command/commit` | Stage all changes, agent writes commit message, commit | Yes |
+| `command/push` | Stage all changes, agent writes commit message, commit, push | Yes |
+| `command/create-pr` | Push feature branch, agent creates PR via `gh pr create` | Yes |
+| `command/rebase` | Fetch and rebase onto base branch (no agent, no push) | No |
+| `command/resolve-conflicts` | Agent detects and resolves git conflicts | Yes |
 
 ```
-command/create-pr/1_setup-git.sh     → source common/setup-git.sh
-command/create-pr/2_agent-auth.sh    → source agents/${AGENT}/auth.sh
-command/create-pr/3_agent-setup.sh   → source agents/${AGENT}/setup.sh
-command/create-pr/4_push.sh          → git push -u origin $FEATURE_BRANCH
-command/create-pr/5_agent-run.sh     → source agents/${AGENT}/run.sh (PROMPT: create PR)
+command/commit/1_setup-git.sh         → source common/setup-git.sh
+command/commit/2_agent-auth.sh        → source agents/${AGENT}/auth.sh
+command/commit/3_agent-setup.sh       → source agents/${AGENT}/setup.sh
+command/commit/4_git-add.sh           → git add -A
+command/commit/5_agent-run.sh         → source agents/${AGENT}/run.sh (PROMPT: write commit msg + commit)
+
+command/push/                          → same as commit, plus 6_push.sh → git push
+
+command/create-pr/1_setup-git.sh      → source common/setup-git.sh
+command/create-pr/2_agent-auth.sh     → source agents/${AGENT}/auth.sh
+command/create-pr/3_agent-setup.sh    → source agents/${AGENT}/setup.sh
+command/create-pr/4_push.sh           → git push -u origin $FEATURE_BRANCH
+command/create-pr/5_agent-run.sh      → source agents/${AGENT}/run.sh (PROMPT: create PR)
+
+command/rebase/1_setup-git.sh         → source common/setup-git.sh
+command/rebase/2_rebase.sh            → git fetch + git rebase (leaves conflicts if any)
+
+command/resolve-conflicts/             → setup-git + agent auth/setup + agent-run (PROMPT: resolve conflicts)
 ```
 
 ## Env Vars

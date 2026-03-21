@@ -8,6 +8,7 @@ import { ChatInput } from './chat-input.js';
 import { ChatHeader } from './chat-header.js';
 import { Greeting } from './greeting.js';
 import { CodeModeToggle } from './code-mode-toggle.js';
+import { DiffViewer } from './diff-viewer.js';
 import { getRepositories, getBranches } from '../actions.js';
 
 export function Chat({ chatId, initialMessages = [], workspace = null }) {
@@ -33,6 +34,7 @@ export function Chat({ chatId, initialMessages = [], workspace = null }) {
   const [branch, setBranch] = useState(workspace?.branch || '');
   const [workspaceState, setWorkspaceState] = useState(workspace);
   const [diffStats, setDiffStats] = useState(null);
+  const [showDiff, setShowDiff] = useState(false);
 
   // Auto-forward to interactive workspace — only on toggle, not on mount
   const hasMounted = useRef(false);
@@ -222,6 +224,7 @@ export function Chat({ chatId, initialMessages = [], workspace = null }) {
             .catch(() => {});
         }
       }}
+      onShowDiff={() => setShowDiff(true)}
       onWorkspaceUpdate={(containerName) => {
         setWorkspaceState(prev => ({ ...prev, containerName }));
       }}
@@ -260,59 +263,110 @@ export function Chat({ chatId, initialMessages = [], workspace = null }) {
           </div>
         </div>
       ) : (
-        <>
-          <Messages messages={messages} status={status} onRetry={handleRetry} onEdit={handleEdit} />
-          {error && (
-            <div className="mx-auto w-full max-w-4xl px-2 md:px-4">
-              <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">
-                {error.message || 'Something went wrong. Please try again.'}
-              </div>
-            </div>
+        <div className="flex flex-1 flex-col min-h-0 overflow-hidden relative">
+          {showDiff && workspaceState?.id && (
+            <div className="absolute inset-0 z-10 bg-black/50" />
           )}
-          {codeMode ? (
-            <div className="mx-auto w-full max-w-4xl px-4 pb-4 md:px-6">
-              {isInteractiveActive && (
-                <a
-                  href={`/code/${workspaceState?.id}`}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 mb-2 text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
-                >
-                  <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                  Click here to access Interactive Mode
-                </a>
-              )}
-              <div className="rounded-t-xl border border-b-0 border-border px-3 py-2.5">
-                {codeModeToggle}
+          {showDiff && workspaceState?.id ? (
+            <>
+              <div className="flex-1 min-h-0 z-20 p-0 md:p-4 flex flex-col">
+                <DiffViewer
+                  workspaceId={workspaceState.id}
+                  diffStats={diffStats}
+                  onClose={() => setShowDiff(false)}
+                />
               </div>
-              <ChatInput
-                bare
-                input={input}
-                setInput={setInput}
-                onSubmit={handleSend}
-                status={status}
-                stop={stop}
-                files={files}
-                setFiles={setFiles}
-                disabled={isInteractiveActive}
-                placeholder={isInteractiveActive ? 'Interactive mode is active.' : 'Send a message...'}
-                className="rounded-t-none"
-                codeMode={codeMode}
-                codeModeSettings={codeModeSettings}
-              />
-            </div>
+              <div className="z-20 px-4 pb-4">
+                {codeMode ? (
+                  <div className="mx-auto w-full max-w-4xl">
+                    <div className="rounded-t-xl border border-b-0 border-border px-3 py-2.5 bg-background">
+                      {codeModeToggle}
+                    </div>
+                    <ChatInput
+                      bare
+                      input={input}
+                      setInput={setInput}
+                      onSubmit={handleSend}
+                      status={status}
+                      stop={stop}
+                      files={files}
+                      setFiles={setFiles}
+                      disabled={isInteractiveActive}
+                      placeholder={isInteractiveActive ? 'Interactive mode is active.' : 'Send a message...'}
+                      className="rounded-t-none"
+                      codeMode={codeMode}
+                      codeModeSettings={codeModeSettings}
+                    />
+                  </div>
+                ) : (
+                  <ChatInput
+                    input={input}
+                    setInput={setInput}
+                    onSubmit={handleSend}
+                    status={status}
+                    stop={stop}
+                    files={files}
+                    setFiles={setFiles}
+                  />
+                )}
+              </div>
+            </>
           ) : (
-            <div className="px-2.5 md:px-0">
-              <ChatInput
-                input={input}
-                setInput={setInput}
-                onSubmit={handleSend}
-                status={status}
-                stop={stop}
-                files={files}
-                setFiles={setFiles}
-              />
-            </div>
+            <>
+              <Messages messages={messages} status={status} onRetry={handleRetry} onEdit={handleEdit} />
+              {error && (
+                <div className="mx-auto w-full max-w-4xl px-2 md:px-4">
+                  <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+                    {error.message || 'Something went wrong. Please try again.'}
+                  </div>
+                </div>
+              )}
+              {codeMode ? (
+                <div className="mx-auto w-full max-w-4xl px-4 pb-4 md:px-6">
+                  {isInteractiveActive && (
+                    <a
+                      href={`/code/${workspaceState?.id}`}
+                      className="flex items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 mb-2 text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
+                    >
+                      <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                      Click here to access Interactive Mode
+                    </a>
+                  )}
+                  <div className="rounded-t-xl border border-b-0 border-border px-3 py-2.5">
+                    {codeModeToggle}
+                  </div>
+                  <ChatInput
+                    bare
+                    input={input}
+                    setInput={setInput}
+                    onSubmit={handleSend}
+                    status={status}
+                    stop={stop}
+                    files={files}
+                    setFiles={setFiles}
+                    disabled={isInteractiveActive}
+                    placeholder={isInteractiveActive ? 'Interactive mode is active.' : 'Send a message...'}
+                    className="rounded-t-none"
+                    codeMode={codeMode}
+                    codeModeSettings={codeModeSettings}
+                  />
+                </div>
+              ) : (
+                <div className="px-2.5 md:px-0">
+                  <ChatInput
+                    input={input}
+                    setInput={setInput}
+                    onSubmit={handleSend}
+                    status={status}
+                    stop={stop}
+                    files={files}
+                    setFiles={setFiles}
+                  />
+                </div>
+              )}
+            </>
           )}
-        </>
+        </div>
       )}
     </div>
   );
