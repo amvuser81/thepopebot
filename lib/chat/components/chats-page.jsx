@@ -6,10 +6,10 @@ import { MessageIcon, CodeIcon, TrashIcon, SearchIcon, PlusIcon, MoreHorizontalI
 import { getChats, deleteChat, renameChat, starChat } from '../actions.js';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from './ui/dropdown-menu.js';
 import { ConfirmDialog } from './ui/confirm-dialog.js';
-import { useFeatures } from './features-context.js';
+
 import { cn } from '../utils.js';
 
-const isCodeChat = (chat) => Boolean(chat.codeWorkspaceId);
+const isCodeChat = (chat) => chat.chatMode === 'code';
 
 const BASE_FILTERS = [
   { value: 'all', label: 'All', icon: null },
@@ -73,8 +73,7 @@ export function ChatsPage({ session }) {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
-  const features = useFeatures();
-  const filters = features?.codeWorkspace ? [...BASE_FILTERS, CODE_FILTER] : BASE_FILTERS;
+  const filters = [...BASE_FILTERS, CODE_FILTER];
 
   const navigateToChat = (id) => {
     window.location.href = id ? `/chat/${id}` : '/';
@@ -97,11 +96,11 @@ export function ChatsPage({ session }) {
 
   useEffect(() => {
     const titleHandler = (e) => {
-      const { chatId, title, codeWorkspaceId } = e.detail;
+      const { chatId, title, codeWorkspaceId, chatMode } = e.detail;
       setChats(prev => {
         const exists = prev.some(c => c.id === chatId);
         if (exists) return prev.map(c => c.id === chatId ? { ...c, title } : c);
-        return [{ id: chatId, title, starred: 0, updatedAt: new Date().toISOString(), codeWorkspaceId: codeWorkspaceId || null }, ...prev];
+        return [{ id: chatId, title, starred: 0, updatedAt: new Date().toISOString(), codeWorkspaceId: codeWorkspaceId || null, chatMode: chatMode || 'agent' }, ...prev];
       });
     };
     const starHandler = (e) => {
@@ -313,7 +312,7 @@ function ChatRow({ chat, onNavigate, onDelete, onStar, onRename }) {
         }
       }}
     >
-      {chat.codeWorkspaceId ? (
+      {chat.chatMode === 'code' ? (
         <span className="relative">
           <CodeIcon size={16} />
           {chat.hasChanges ? <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-destructive" /> : null}

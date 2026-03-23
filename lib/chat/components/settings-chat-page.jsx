@@ -38,8 +38,8 @@ export function ChatConfigPage() {
     loadSettings();
   }, []);
 
-  const handleSaveActive = async (provider, model, maxTokens, webSearch) => {
-    const result = await setActiveLlm(provider, model, maxTokens, webSearch);
+  const handleSaveActive = async (provider, model, maxTokens) => {
+    const result = await setActiveLlm(provider, model, maxTokens);
     if (result?.success) await loadSettings();
     return result;
   };
@@ -67,7 +67,6 @@ function ActiveConfig({ settings, onSave }) {
   const [provider, setProvider] = useState('');
   const [model, setModel] = useState('');
   const [maxTokens, setMaxTokens] = useState('4096');
-  const [webSearch, setWebSearch] = useState('true');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const initialized = useRef(false);
@@ -78,7 +77,6 @@ function ActiveConfig({ settings, onSave }) {
       setProvider(settings.active.provider || 'anthropic');
       setModel(settings.active.model || '');
       setMaxTokens(settings.active.maxTokens || '4096');
-      setWebSearch(settings.active.webSearch || 'true');
       setTimeout(() => { initialized.current = true; }, 100);
     }
   }, [settings]);
@@ -129,23 +127,17 @@ function ActiveConfig({ settings, onSave }) {
       newModel = cp?.model || '';
     }
     setModel(newModel);
-    scheduleAutoSave(slug, newModel, maxTokens, webSearch);
+    scheduleAutoSave(slug, newModel, maxTokens);
   };
 
   const handleModelChange = (m) => {
     setModel(m);
-    scheduleAutoSave(provider, m, maxTokens, webSearch);
+    scheduleAutoSave(provider, m, maxTokens);
   };
 
   const handleMaxTokensChange = (mt) => {
     setMaxTokens(mt);
-    scheduleAutoSave(provider, model, mt, webSearch);
-  };
-
-  const handleWebSearchToggle = () => {
-    const ws = webSearch === 'true' ? 'false' : 'true';
-    setWebSearch(ws);
-    scheduleAutoSave(provider, model, maxTokens, ws);
+    scheduleAutoSave(provider, model, mt);
   };
 
   return (
@@ -190,33 +182,17 @@ function ActiveConfig({ settings, onSave }) {
           )}
         </div>
 
-        <div className="flex items-center justify-between py-3">
-          <label className="text-sm font-medium shrink-0">Max Tokens</label>
-          <input
-            type="number"
-            value={maxTokens}
-            onChange={(e) => handleMaxTokensChange(e.target.value)}
-            className="w-48 rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-foreground"
-          />
-        </div>
-
         <div className="flex items-center justify-between py-3 last:pb-0">
-          <label className="text-sm font-medium shrink-0">Web Search</label>
+          <label className="text-sm font-medium shrink-0">Max Tokens</label>
           <div className="flex items-center gap-3">
             {saving && <span className="text-xs text-muted-foreground">Saving...</span>}
             {saved && <span className="text-xs text-green-500 inline-flex items-center gap-1"><CheckIcon size={12} /> Saved</span>}
-            <button
-              onClick={handleWebSearchToggle}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                webSearch === 'true' ? 'bg-foreground' : 'bg-border'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
-                  webSearch === 'true' ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
+            <input
+              type="number"
+              value={maxTokens}
+              onChange={(e) => handleMaxTokensChange(e.target.value)}
+              className="w-48 rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-foreground"
+            />
           </div>
         </div>
       </div>
@@ -742,8 +718,8 @@ export function ChatLlmPage() {
   }, []);
 
   // Default Provider handlers
-  const handleSaveActive = async (provider, model, maxTokens, webSearch) => {
-    const result = await setActiveLlm(provider, model, maxTokens, webSearch);
+  const handleSaveActive = async (provider, model, maxTokens) => {
+    const result = await setActiveLlm(provider, model, maxTokens);
     if (result?.success) await loadSettings();
     return result;
   };

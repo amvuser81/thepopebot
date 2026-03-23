@@ -5,7 +5,6 @@ import { AppSidebar } from './app-sidebar.js';
 import { Chat } from './chat.js';
 import { SidebarProvider, SidebarInset } from './ui/sidebar.js';
 import { ChatNavProvider } from './chat-nav-context.js';
-import { getChatMessages, getChatData } from '../actions.js';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -55,56 +54,59 @@ export function ChatPage({ session, needsSetup, chatId }) {
   // Load messages and workspace data when activeChatId changes
   useEffect(() => {
     if (activeChatId) {
-      getChatMessages(activeChatId).then(async (dbMessages) => {
-        if (dbMessages.length === 0) {
-          // Stale chat (e.g. after login with old UUID) — start fresh
-          setInitialMessages([]);
-          setWorkspace(null);
-          setResolvedChatId(uuidv4());
-          window.history.replaceState({}, '', '/');
-          return;
-        }
-        const uiMessages = [];
-        for (const msg of dbMessages) {
-          let parts;
-          try {
-            const parsed = JSON.parse(msg.content);
-            if (parsed?.type === 'tool-invocation') {
-              parts = [parsed];
-            } else {
+      fetch(`/stream/chat-messages/${activeChatId}`)
+        .then(r => r.json())
+        .then(async (dbMessages) => {
+          if (dbMessages.length === 0) {
+            // Stale chat (e.g. after login with old UUID) — start fresh
+            setInitialMessages([]);
+            setWorkspace(null);
+            setResolvedChatId(uuidv4());
+            window.history.replaceState({}, '', '/');
+            return;
+          }
+          const uiMessages = [];
+          for (const msg of dbMessages) {
+            let parts;
+            try {
+              const parsed = JSON.parse(msg.content);
+              if (parsed?.type === 'tool-invocation') {
+                parts = [parsed];
+              } else {
+                parts = [{ type: 'text', text: msg.content }];
+              }
+            } catch {
               parts = [{ type: 'text', text: msg.content }];
             }
+
+            // Merge consecutive assistant messages into one (matches streaming layout)
+            const prev = uiMessages[uiMessages.length - 1];
+            if (prev && prev.role === 'assistant' && msg.role === 'assistant') {
+              prev.parts.push(...parts);
+              prev.content += '\n' + msg.content;
+            } else {
+              uiMessages.push({
+                id: msg.id,
+                role: msg.role,
+                content: msg.content,
+                parts,
+                createdAt: new Date(msg.createdAt),
+              });
+            }
+          }
+          setInitialMessages(uiMessages);
+
+          // Check if this is a code chat
+          try {
+            const r = await fetch(`/stream/chat-data/${activeChatId}`);
+            const chat = await r.json();
+            setWorkspace(chat?.workspace || null);
           } catch {
-            parts = [{ type: 'text', text: msg.content }];
+            setWorkspace(null);
           }
 
-          // Merge consecutive assistant messages into one (matches streaming layout)
-          const prev = uiMessages[uiMessages.length - 1];
-          if (prev && prev.role === 'assistant' && msg.role === 'assistant') {
-            prev.parts.push(...parts);
-            prev.content += '\n' + msg.content;
-          } else {
-            uiMessages.push({
-              id: msg.id,
-              role: msg.role,
-              content: msg.content,
-              parts,
-              createdAt: new Date(msg.createdAt),
-            });
-          }
-        }
-        setInitialMessages(uiMessages);
-
-        // Check if this is a code chat
-        try {
-          const chat = await getChatData(activeChatId);
-          setWorkspace(chat?.workspace || null);
-        } catch {
-          setWorkspace(null);
-        }
-
-        setResolvedChatId(activeChatId);
-      });
+          setResolvedChatId(activeChatId);
+        });
     }
   }, [activeChatId]);
 

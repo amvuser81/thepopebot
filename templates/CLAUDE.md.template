@@ -19,17 +19,18 @@ project-root/
 ├── package.json
 │
 ├── config/                            # Agent configuration (user-editable)
-│   ├── SOUL.md                        # Personality, identity, and values
-│   ├── JOB_PLANNING.md                # Event handler LLM system prompt
-│   ├── JOB_AGENT.md                   # Agent runtime environment docs
-│   ├── JOB_SUMMARY.md                 # Prompt for summarizing completed jobs
+│   ├── agent-chat/
+│   │   └── SYSTEM.md                  # Agent chat system prompt
+│   ├── code-chat/
+│   │   └── SYSTEM.md                  # Code workspace planning prompt
+│   ├── agent-job/
+│   │   ├── SOUL.md                    # Personality, identity, and values
+│   │   ├── AGENT_JOB.md               # Agent runtime environment docs
+│   │   └── SUMMARY.md                 # Prompt for summarizing completed jobs
+│   ├── cluster/
+│   │   ├── SYSTEM.md                  # Cluster system prompt
+│   │   └── ROLE.md                    # Cluster role prompt
 │   ├── HEARTBEAT.md                   # Self-monitoring / heartbeat behavior
-│   ├── CODE_PLANNING.md               # System prompt for code workspace planning chat
-│   ├── CLUSTER_SYSTEM_PROMPT.md       # System prompt for cluster worker agents
-│   ├── CLUSTER_ROLE_PROMPT.md         # Per-role prompt template for cluster workers
-│   ├── WEB_SEARCH_AVAILABLE.md        # Injected when web search is available
-│   ├── WEB_SEARCH_UNAVAILABLE.md      # Injected when web search is not available
-│   ├── SKILL_BUILDING_GUIDE.md        # Guide for building agent skills
 │   ├── CRONS.json                     # Scheduled job definitions
 │   └── TRIGGERS.json                  # Webhook trigger definitions
 │
@@ -120,7 +121,7 @@ Multi-role agent teams that collaborate via shared directories. Create and manag
 - **Triggers** — Manual (click), webhook (POST with payload), cron (scheduled), file watch (react to changes)
 - **Concurrency** — Per-role container limits; triggers are rejected when at capacity
 - **Console** — Live container status, resource usage, streaming logs at `/clusters`
-- **Prompts** — Customizable via `config/CLUSTER_SYSTEM_PROMPT.md` (shared) and `config/CLUSTER_ROLE_PROMPT.md` (per-role template)
+- **Prompts** — Customizable via `config/cluster/SYSTEM.md` (shared) and `config/cluster/ROLE.md` (per-role template)
 - **Data** — Stored under `data/clusters/cluster-{id}/`
 
 ## Action Types
@@ -316,7 +317,6 @@ SQLite via Drizzle ORM at `data/thepopebot.sqlite`. Auto-initialized and auto-mi
 | `OPENAI_BASE_URL` | Custom OpenAI-compatible base URL | For custom provider |
 | `GOOGLE_API_KEY` | Google API key | For google provider |
 | `CUSTOM_API_KEY` | Custom provider API key | For custom provider |
-| `WEB_SEARCH` | Set to `false` to disable web search (anthropic and openai only) | No |
 | `AGENT_BACKEND` | Agent runner: `pi` or `claude-code` | No (default: `claude-code`) |
 | `DATABASE_PATH` | Override SQLite DB location | No |
 | `COMPOSE_FILE` | Override which docker-compose file to use (e.g. `docker-compose.custom.yml`) | No |
@@ -331,7 +331,7 @@ The Next.js app and `.next` build output are baked into the Docker image — the
 
 ## Customization
 
-User-editable config files in `config/`: `SOUL.md` (personality), `JOB_PLANNING.md` (LLM system prompt), `JOB_AGENT.md` (runtime docs), `JOB_SUMMARY.md` (job summaries), `HEARTBEAT.md` (self-monitoring), `CODE_PLANNING.md` (code workspace planning), `CLUSTER_SYSTEM_PROMPT.md` (cluster system prompt), `CLUSTER_ROLE_PROMPT.md` (cluster role prompt), `WEB_SEARCH_AVAILABLE.md` (web search context), `WEB_SEARCH_UNAVAILABLE.md` (web search unavailable context), `SKILL_BUILDING_GUIDE.md` (skill guide), `CRONS.json` (scheduled jobs), `TRIGGERS.json` (webhook triggers).
+User-editable config files in `config/`: `agent-chat/SYSTEM.md` (agent chat system prompt), `code-chat/SYSTEM.md` (code workspace planning), `agent-job/SOUL.md` (personality), `agent-job/AGENT_JOB.md` (runtime docs), `agent-job/SUMMARY.md` (job summaries), `cluster/SYSTEM.md` (cluster system prompt), `cluster/ROLE.md` (cluster role prompt), `HEARTBEAT.md` (self-monitoring), `CRONS.json` (scheduled jobs), `TRIGGERS.json` (webhook triggers).
 
 To customize Docker Compose (TLS, ports, volumes, extra services), edit `docker-compose.custom.yml` and set `COMPOSE_FILE=docker-compose.custom.yml` in `.env`. For Tailscale TLS, copy `traefik-dynamic.yml.example` to `traefik-dynamic.yml` and follow the instructions inside.
 

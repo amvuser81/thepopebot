@@ -6,17 +6,14 @@ The `config/` directory defines your agent's personality and behavior:
 
 | File | Purpose |
 |------|---------|
-| `SOUL.md` | Agent identity, personality traits, and values |
-| `JOB_PLANNING.md` | Event handler LLM system prompt |
-| `JOB_AGENT.md` | Agent runtime environment docs |
-| `JOB_SUMMARY.md` | Prompt for summarizing completed jobs |
+| `agent-chat/SYSTEM.md` | Agent chat system prompt |
+| `code-chat/SYSTEM.md` | Code workspace planning system prompt |
+| `agent-job/SOUL.md` | Agent identity, personality traits, and values |
+| `agent-job/AGENT_JOB.md` | Agent runtime environment docs |
+| `agent-job/SUMMARY.md` | Prompt for summarizing completed jobs |
+| `cluster/SYSTEM.md` | System prompt for cluster worker agents |
+| `cluster/ROLE.md` | Per-role prompt template for cluster workers |
 | `HEARTBEAT.md` | Self-monitoring behavior |
-| `CODE_PLANNING.md` | System prompt for code workspace planning chat |
-| `CLUSTER_SYSTEM_PROMPT.md` | System prompt for cluster worker agents |
-| `CLUSTER_ROLE_PROMPT.md` | Per-role prompt template for cluster workers |
-| `WEB_SEARCH_AVAILABLE.md` | Injected when web search is available |
-| `WEB_SEARCH_UNAVAILABLE.md` | Injected when web search is not available |
-| `SKILL_BUILDING_GUIDE.md` | Reference guide for building new skills |
 | `CRONS.json` | Scheduled job definitions |
 | `TRIGGERS.json` | Webhook trigger definitions |
 
@@ -55,7 +52,6 @@ Set in `.env` in your project root. These configure the **Event Handler** (web c
 | `OPENAI_BASE_URL` | Custom OpenAI-compatible base URL | For custom provider |
 | `GOOGLE_API_KEY` | Google API key | For google provider |
 | `CUSTOM_API_KEY` | Custom provider API key | For custom provider |
-| `WEB_SEARCH` | Set to `false` to disable web search (anthropic and openai only) | No |
 | `AGENT_BACKEND` | Agent runner: `pi` or `claude-code` | No (default: `claude-code`) |
 | `ASSEMBLYAI_API_KEY` | API key for voice transcription | For voice input |
 | `DATABASE_PATH` | Override SQLite DB location | No |

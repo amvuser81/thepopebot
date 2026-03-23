@@ -68,7 +68,7 @@ set -e
 # ══════════════════════════════════════════════════════════════════════
 
 if [ -z "$RUNTIME" ]; then
-    echo "ERROR: RUNTIME env var is required (job, headless, interactive, cluster-worker, command/*)"
+    echo "ERROR: RUNTIME env var is required (agent-job, headless, interactive, cluster-worker, command/*)"
     exit 1
 fi
 

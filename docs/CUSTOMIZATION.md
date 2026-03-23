@@ -6,21 +6,18 @@ The `config/` directory is the agent's brain — it defines who the agent is and
 
 | File | Purpose |
 |------|---------|
-| `SOUL.md` | Agent identity, personality traits, and values |
-| `JOB_PLANNING.md` | Event handler system prompt |
-| `JOB_SUMMARY.md` | Prompt for summarizing completed jobs |
+| `agent-chat/SYSTEM.md` | Agent chat system prompt |
+| `code-chat/SYSTEM.md` | Code workspace planning system prompt |
+| `agent-job/SOUL.md` | Agent identity, personality traits, and values |
+| `agent-job/AGENT_JOB.md` | Agent runtime environment |
+| `agent-job/SUMMARY.md` | Prompt for summarizing completed jobs |
+| `cluster/SYSTEM.md` | System prompt for cluster worker agents |
+| `cluster/ROLE.md` | Per-role prompt template for cluster workers |
 | `HEARTBEAT.md` | Self-monitoring behavior |
-| `JOB_AGENT.md` | Agent runtime environment |
-| `CODE_PLANNING.md` | System prompt for code workspace planning chat |
-| `CLUSTER_SYSTEM_PROMPT.md` | System prompt for cluster worker agents |
-| `CLUSTER_ROLE_PROMPT.md` | Per-role prompt template for cluster workers |
-| `WEB_SEARCH_AVAILABLE.md` | Injected when web search is available |
-| `WEB_SEARCH_UNAVAILABLE.md` | Injected when web search is not available |
-| `SKILL_BUILDING_GUIDE.md` | Reference guide for building new skills |
 | `CRONS.json` | Scheduled job definitions |
 | `TRIGGERS.json` | Webhook trigger definitions |
 
-Each job automatically gets its own `logs/<JOB_ID>/job.md` file created by the event handler. Jobs are created via Telegram chat, webhooks, or cron schedules.
+Each agent job automatically gets its own `logs/<AGENT_JOB_ID>/agent-job.config.json` file created by the event handler. Jobs are created via Telegram chat, webhooks, or cron schedules.
 
 ---
 
@@ -71,7 +68,7 @@ The bot automatically detects voice messages and transcribes them before process
 Create jobs programmatically via HTTP:
 
 ```bash
-curl -X POST https://your-app-url/api/create-job \
+curl -X POST https://your-app-url/api/create-agent-job \
   -H "Content-Type: application/json" \
   -H "x-api-key: YOUR_API_KEY" \
   -d '{"job": "Update the README with installation instructions"}'
@@ -164,7 +161,7 @@ ln -s ../skill-name skill-name
 
 ### How Secret Protection Works
 
-1. The `run-job.yml` workflow collects individual `AGENT_*` GitHub secrets into a `SECRETS` env var
+1. The event handler collects credentials from the config database and passes them as env vars to the Docker container
 2. The entrypoint decodes the JSON and exports each key as an env var
 3. Pi starts - SDKs read their env vars (ANTHROPIC_API_KEY, gh CLI uses GH_TOKEN)
 4. The `env-sanitizer` extension filters ALL secret keys from bash subprocess env

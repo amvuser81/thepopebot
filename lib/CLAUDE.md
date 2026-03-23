@@ -10,7 +10,7 @@ Both cron jobs and webhook triggers use the same shared dispatch system (`lib/ac
 
 If the task needs to *think*, use `agent`. If it just needs to *do*, use `command`. If it needs to *call an external service*, use `webhook`.
 
-**Agent**: Creates a Docker Agent job via `createJob()`. Pushes a `job/*` branch; `run-job.yml` spins up the container. The `job` string is the LLM task prompt. Agent backend selected via `agent_backend` in `job.config.json`.
+**Agent**: Creates a Docker Agent job via `createAgentJob()`. Pushes an `agent-job/*` branch and launches a local Docker container. The `job` string is the LLM task prompt. Agent backend selected via `agent_backend` in `agent-job.config.json`.
 
 **Command**: Runs a shell command on the event handler. Working directory: `cron/` for crons, `triggers/` for triggers.
 
@@ -18,7 +18,7 @@ If the task needs to *think*, use `agent`. If it just needs to *do*, use `comman
 
 ## Cron Jobs
 
-Defined in `config/CRONS.json`, loaded by `lib/cron.js` at startup via `node-cron`. Each entry has `name`, `schedule` (cron expression), `type` (`agent`/`command`/`webhook`), and the corresponding action fields (`job`, `command`, or `url`/`method`/`headers`/`vars`). Set `enabled: false` to disable. Agent-type entries support optional `llm_provider` and `llm_model` fields to override the default LLM (passed to Docker agent via `job.config.json`).
+Defined in `config/CRONS.json`, loaded by `lib/cron.js` at startup via `node-cron`. Each entry has `name`, `schedule` (cron expression), `type` (`agent`/`command`/`webhook`), and the corresponding action fields (`job`, `command`, or `url`/`method`/`headers`/`vars`). Set `enabled: false` to disable. Agent-type entries support optional `llm_provider` and `llm_model` fields to override the default LLM (passed to Docker agent via `agent-job.config.json`).
 
 ## Webhook Triggers
 

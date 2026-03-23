@@ -2,7 +2,7 @@
 
 Technical reference for AI assistants modifying the thepopebot NPM package source code.
 
-**Architecture**: Event Handler (Next.js) creates `job/*` branches → GitHub Actions runs Docker agent (Pi or Claude Code) → task executed → PR created → auto-merge → notification. Agent jobs log to `logs/{JOB_ID}/`.
+**Architecture**: Event Handler (Next.js) creates `agent-job/*` branches → launches Docker agent container locally (Claude Code, Pi, etc.) → task executed → PR created → auto-merge → notification. Agent jobs log to `logs/{JOB_ID}/`.
 
 ## Deployment Model
 
@@ -10,7 +10,7 @@ The npm package (`api/`, `lib/`, `config/`, `bin/`) is published to npm. In prod
 
 - **Event handler**: Docker image bakes the npm package, Next.js app source (`web/`), and `.next` build output. User project directories (`config/`, `skills/`, `.env`, `data/`, etc.) are individually volume-mounted into `/app`. The full project is also mounted at `/project` for git access. Runs `server.js` via PM2 behind Traefik reverse proxy.
 - **`lib/paths.js`**: Central path resolver — ALL paths resolve from `process.cwd()`. This is how the installed npm package finds the volume-mounted user project files.
-- **Job containers**: Ephemeral Docker containers clone `job/*` branches separately — NOT volume-mounted. See `docker/CLAUDE.md`.
+- **Agent-job containers**: Ephemeral Docker containers clone `agent-job/*` branches separately — use named volumes for workspace. See `docker/CLAUDE.md`.
 - **Local install**: Gives users CLI tools (`init`, `setup`, `upgrade`) and configuration scaffolding.
 
 ## Package vs. Templates — Where Code Goes
@@ -140,6 +140,6 @@ See `config/CLAUDE.md` for config file details and the `{{ include }}` / `{{vari
 `LLM_MODEL` and `LLM_PROVIDER` exist in two separate systems using the same names:
 
 - **`.env`** — read by the event handler (chat). Set by `setup/lib/sync.mjs`.
-- **GitHub repository variables** — read by `run-job.yml` (agent jobs). Set by `setup/lib/sync.mjs`.
+- **GitHub repository variables** — read by agent job containers. Set by `setup/lib/sync.mjs`.
 
 These are independent environments. They use the same variable names. They can hold different values (e.g. chat uses sonnet, jobs use opus). Do NOT create separate `AGENT_LLM_*` variable names — just set different values in `.env` vs GitHub variables.

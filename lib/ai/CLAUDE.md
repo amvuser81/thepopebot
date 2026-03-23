@@ -2,23 +2,22 @@
 
 ## Agent Types
 
-Two agent types, both using `createReactAgent` from `@langchain/langgraph/prebuilt` with `SqliteSaver` for conversation memory:
+Two agent singletons, both using `createReactAgent` from `@langchain/langgraph/prebuilt` with `SqliteSaver` for conversation memory:
 
-**Chat Agent** — singleton via `getChatAgent()`:
-- System prompt: `config/JOB_PLANNING.md` (rendered fresh each invocation via `render_md()`)
-- Tools: `create_job`, `get_job_status`, `plan_popebot_updates`, `get_skill_building_guide`, `get_skill_details`, + web search (if provider supports it)
-- Call `resetChatAgent()` to clear the singleton (required if hot-reloading)
+**Agent Chat** — singleton via `getAgentChat()`:
+- System prompt: `config/agent-chat/SYSTEM.md` (rendered fresh each invocation via `render_md()`)
+- Tools: `create_agent_job`, `update_popebot`
+- Call `resetAgentChats()` to clear both singletons (required if hot-reloading)
 
-**Code Agent** — per-workspace via `getCodeAgent({ repo, branch, workspaceId, chatId })`:
-- System prompt: `config/CODE_PLANNING.md` (rendered fresh each invocation)
-- Tools: `start_coding` (bound to workspace), + web search
-- Keyed by `repo_branch_workspaceId` in an internal Map
+**Code Chat** — singleton via `getCodeChat()`:
+- System prompt: `config/code-chat/SYSTEM.md` (rendered fresh each invocation)
+- Tools: `start_headless_coding_agent` (reads repo/branch/workspace from `runtime.configurable`)
 
 ## Adding a New Tool
 
 1. Define in `tools.js` with Zod schema (use `tool()` from `@langchain/core/tools`)
 2. Add to the agent's tools array in `agent.js`
-3. Call `resetChatAgent()` if the chat agent needs to pick up the new tool without restart
+3. Call `resetAgentChats()` if the agent needs to pick up the new tool without restart
 
 ## Model Resolution
 
@@ -33,7 +32,7 @@ Two agent types, both using `createReactAgent` from `@langchain/langgraph/prebui
 | Google | `google` | `gemini-2.5-flash` | `GOOGLE_API_KEY` |
 | Custom | `custom` | — | `OPENAI_BASE_URL`, `CUSTOM_API_KEY` (optional) |
 
-`LLM_MAX_TOKENS` defaults to 4096. Web search available for `anthropic` and `openai` providers only (disable with `WEB_SEARCH=false`).
+`LLM_MAX_TOKENS` defaults to 4096.
 
 > **Google model compatibility note:** `gemini-2.5-pro` and all `gemini-3.*` models require `thought_signature` round-tripping that `@langchain/google-genai` does not yet support. Setting `LLM_MODEL` to one of these will automatically fall back to `gemini-2.5-flash` at runtime with a warning. Supported Gemini models: `gemini-2.5-flash` (default), `gemini-2.5-flash-lite`. Full support for thinking models is tracked in issue #201.
 

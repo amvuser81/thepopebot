@@ -26,13 +26,12 @@ All environment variables for the Event Handler (set in `.env` in your project r
 | `GOOGLE_API_KEY` | API key for Google provider | For google provider |
 | `CUSTOM_API_KEY` | API key for custom OpenAI-compatible provider (not needed for local models) | For custom provider |
 | `OPENAI_BASE_URL` | Custom OpenAI-compatible base URL (e.g. `http://localhost:11434/v1` for Ollama) | For custom provider |
-| `WEB_SEARCH` | Set to `false` to disable web search tool (available for `anthropic` and `openai` only) | No |
 | `ASSEMBLYAI_API_KEY` | API key for AssemblyAI voice transcription (hides voice button if unset) | For voice input |
 | `DATABASE_PATH` | Override SQLite database location (default: `data/thepopebot.sqlite`) | No |
 | `THEPOPEBOT_VERSION` | Package version for Docker image tags (auto-set by setup) | No |
 | `LETSENCRYPT_EMAIL` | Email for Let's Encrypt SSL (docker-compose only) | No |
 | `EVENT_HANDLER_IMAGE_URL` | Custom event handler Docker image | No |
-| `JOB_IMAGE_URL` | Custom job agent Docker image | No |
+| `AGENT_JOB_IMAGE_URL` | Custom agent job Docker image | No |
 
 API keys for `/api` routes are database-backed and managed via the web UI Settings page. Use the `x-api-key` header for authentication.
 
@@ -61,7 +60,7 @@ Set via `npx thepopebot set-agent-secret` and `npx thepopebot set-agent-llm-secr
 | `AGENT_` | Protected credentials (filtered from LLM's bash) | `AGENT_GH_TOKEN`, `AGENT_ANTHROPIC_API_KEY` |
 | `AGENT_LLM_` | LLM-accessible credentials (skills, browser logins) | `AGENT_LLM_BRAVE_API_KEY` |
 
-The `run-job.yml` workflow automatically collects these at runtime and passes them to the Docker container.
+The event handler automatically passes these credentials to the Docker container at runtime via `buildAgentAuthEnv()`.
 
 | Secret | Description | Required |
 |--------|-------------|----------|
@@ -78,7 +77,7 @@ Configure in **Settings → Secrets and variables → Actions → Variables**:
 | `APP_URL` | Public URL for the event handler (e.g., `https://mybot.example.com`) | Yes | — |
 | `AUTO_MERGE` | Set to `false` to disable auto-merge of job PRs | No | Enabled |
 | `ALLOWED_PATHS` | Comma-separated path prefixes for auto-merge | No | `/logs` |
-| `JOB_IMAGE_URL` | Docker image path for job agent (e.g., `ghcr.io/myorg/mybot`) | No | `stephengpope/thepopebot:pi-coding-agent-job-${THEPOPEBOT_VERSION}` |
+| `AGENT_JOB_IMAGE_URL` | Docker image path for agent job (e.g., `ghcr.io/myorg/mybot`) | No | `stephengpope/thepopebot:coding-agent-claude-code-${THEPOPEBOT_VERSION}` |
 | `EVENT_HANDLER_IMAGE_URL` | Docker image path for event handler | No | `stephengpope/thepopebot:event-handler-${THEPOPEBOT_VERSION}` |
 | `RUNS_ON` | GitHub Actions runner label (e.g., `self-hosted`) | No | `ubuntu-latest` |
 | `LLM_PROVIDER` | LLM provider (`anthropic`, `openai`, `google`, `custom`) | No | `anthropic` |

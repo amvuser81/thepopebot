@@ -21,7 +21,7 @@ From chat, ask the AI to do something that requires code changes — like "updat
 You can also create jobs via the API:
 
 ```bash
-curl -X POST https://your-app-url/api/create-job \
+curl -X POST https://your-app-url/api/create-agent-job \
   -H "Content-Type: application/json" \
   -H "x-api-key: YOUR_API_KEY" \
   -d '{"job": "Update the README with installation instructions"}'

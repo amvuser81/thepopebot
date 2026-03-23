@@ -1,13 +1,24 @@
 # config/ — Configuration Files
 
-## Template Config Files
+## Directory Structure
 
-Users customize behavior through these files in `config/`:
-
-- `SOUL.md` — Agent personality/identity
-- `JOB_PLANNING.md` — Event handler system prompt (supports `{{skills}}`, `{{web_search}}`, `{{datetime}}`)
-- `CODE_PLANNING.md` — Code workspace system prompt
-- `CRONS.json`, `TRIGGERS.json` — Scheduled jobs and webhook triggers
+```
+config/
+├── agent-chat/
+│   └── SYSTEM.md              # Agent chat system prompt (supports {{skills}}, {{datetime}})
+├── code-chat/
+│   └── SYSTEM.md              # Code workspace system prompt
+├── agent-job/
+│   ├── SOUL.md                # Agent personality/identity (used by Docker agent)
+│   ├── AGENT_JOB.md           # Agent runtime environment docs (used by Docker agent)
+│   └── SUMMARY.md             # Prompt for summarizing completed jobs
+├── cluster/
+│   ├── SYSTEM.md              # Cluster worker system prompt
+│   └── ROLE.md                # Per-role prompt template for cluster workers
+├── HEARTBEAT.md               # Self-monitoring behavior (cron task prompt)
+├── CRONS.json                 # Scheduled job definitions
+└── TRIGGERS.json              # Webhook trigger definitions
+```
 
 ## Markdown File Includes
 
@@ -16,7 +27,6 @@ Markdown files in `config/` support includes and built-in variables, powered by 
 - **File includes**: `{{ filepath.md }}` — resolves relative to project root, recursive with circular detection. Missing files are left as-is.
 - **`{{datetime}}`** — Current ISO timestamp.
 - **`{{skills}}`** — Dynamic bullet list of active skill descriptions from `skills/active/*/SKILL.md` frontmatter. Never hardcode skill names — this is resolved at runtime.
-- **`{{web_search}}`** — Conditionally includes `config/WEB_SEARCH_AVAILABLE.md` or `config/WEB_SEARCH_UNAVAILABLE.md` based on provider support.
 
 ## Next.js Config Wrapper (index.js)
 

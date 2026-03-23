@@ -17,16 +17,13 @@ export LOG_DIR
 SYSTEM_PROMPT_FILE="${LOG_DIR}/system-prompt.md"
 > "$SYSTEM_PROMPT_FILE"
 
-if [ -f "config/SOUL.md" ]; then
-    cat "config/SOUL.md" >> "$SYSTEM_PROMPT_FILE"
+if [ -f "config/agent-job/SOUL.md" ]; then
+    cat "config/agent-job/SOUL.md" >> "$SYSTEM_PROMPT_FILE"
     echo -e "\n\n" >> "$SYSTEM_PROMPT_FILE"
 fi
 
-if [ -f "config/AGENT_JOB.md" ]; then
-    cat "config/AGENT_JOB.md" >> "$SYSTEM_PROMPT_FILE"
-elif [ -f "config/JOB_AGENT.md" ]; then
-    # Backwards compatibility with old config name
-    cat "config/JOB_AGENT.md" >> "$SYSTEM_PROMPT_FILE"
+if [ -f "config/agent-job/AGENT_JOB.md" ]; then
+    cat "config/agent-job/AGENT_JOB.md" >> "$SYSTEM_PROMPT_FILE"
 fi
 
 # Resolve {{datetime}} template variable

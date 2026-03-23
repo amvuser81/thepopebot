@@ -9,7 +9,7 @@ Clusters are multi-role agent teams. Define a set of roles, each with its own pr
 Create clusters from the web UI at `/clusters`. Each cluster has:
 
 - **Name** — Display label
-- **System Prompt** — Shared context for all roles. Defaults to `config/CLUSTER_SYSTEM_PROMPT.md`
+- **System Prompt** — Shared context for all roles. Defaults to `config/cluster/SYSTEM.md`
 - **Shared Folders** — Named subdirectories under `shared/` that all roles can access (e.g., `docs`, `output`)
 - **Enabled/Disabled** — Toggle the cluster. Disabling stops all running containers
 
@@ -22,7 +22,7 @@ Each role represents one agent type within a cluster:
 | Field | Description |
 |-------|-------------|
 | **Role Name** | Display name (e.g., "Researcher", "Writer") |
-| **Role Instructions** | Markdown prompt for the role. Defaults to `config/CLUSTER_ROLE_PROMPT.md` |
+| **Role Instructions** | Markdown prompt for the role. Defaults to `config/cluster/ROLE.md` |
 | **Prompt** | Task prompt passed to the agent (default: "Execute your role.") |
 | **Max Concurrency** | Max simultaneous containers for this role (default: 1) |
 | **Trigger Config** | How this role gets activated (see below) |
@@ -148,4 +148,4 @@ Historical logs are available grouped by role, including stdout, stderr, prompts
 
 ## Customizing Prompts
 
-Edit `config/CLUSTER_SYSTEM_PROMPT.md` and `config/CLUSTER_ROLE_PROMPT.md` to set defaults for new clusters and roles. Existing clusters keep their current prompts — these templates only affect newly created clusters and roles.
+Edit `config/cluster/SYSTEM.md` and `config/cluster/ROLE.md` to set defaults for new clusters and roles. Existing clusters keep their current prompts — these templates only affect newly created clusters and roles.

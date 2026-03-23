@@ -23,8 +23,8 @@ Browser-facing features must use **Server Actions** (`'use server'` functions) w
 | Method | Path | Auth | Handler |
 |--------|------|------|---------|
 | GET | `/api/ping` | None | Health check |
-| POST | `/api/create-job` | `x-api-key` | Create agent job |
-| GET | `/api/jobs/status` | `x-api-key` | Job status (query: `?job_id=`) |
+| POST | `/api/create-agent-job` | `x-api-key` | Create agent job |
+| GET | `/api/agent-jobs/status` | `x-api-key` | Agent job status (query: `?agent_job_id=`) |
 | POST | `/api/telegram/webhook` | Telegram webhook secret | Telegram message handler |
 | POST | `/api/telegram/register` | `x-api-key` | Register bot token + webhook URL |
 | POST | `/api/github/webhook` | GitHub webhook secret | GitHub event handler |

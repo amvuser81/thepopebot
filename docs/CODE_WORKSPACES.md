@@ -6,7 +6,7 @@ Code workspaces are browser-based interactive coding sessions that run inside Do
 
 ## Creating a Workspace
 
-Start a code workspace from any chat conversation. When you ask the AI to help with code, it can launch a workspace using the `start_coding` tool. The AI will:
+Start a code workspace from any chat conversation. When you ask the AI to help with code, it can launch a workspace using the `start_headless_coding_agent` tool. The AI will:
 
 1. Spin up a Docker container with Claude Code and your repository cloned
 2. Create a feature branch for your changes
@@ -44,7 +44,7 @@ The toolbar at the bottom of the Claude Code tab provides quick actions:
 
 ### Startup
 
-When a workspace is created, a Docker container is launched from the `claude-code-workspace` image. The container:
+When a workspace is created, a Docker container is launched from the `coding-agent-claude-code` image (interactive runtime). The container:
 
 - Clones your repository and checks out the specified branch
 - Creates a feature branch if one was requested

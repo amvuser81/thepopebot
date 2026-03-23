@@ -3,7 +3,8 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { SendIcon, StopIcon, PaperclipIcon, XIcon, FileTextIcon, MicIcon } from './icons.js';
 import { useVoiceInput } from '../../voice/use-voice-input.js';
-import { getVoiceToken } from '../../voice/actions.js';
+const getVoiceTokenFetch = () =>
+  fetch('/stream/voice-token').then(r => r.json()).catch(() => ({ error: 'Failed to get voice token' }));
 import { VoiceBars } from './voice-bars.jsx';
 import { cn } from '../utils.js';
 
@@ -50,7 +51,7 @@ export function ChatInput({ input, setInput, onSubmit, status, stop, files, setF
   const volumeRef = useRef(0);
 
   const { voiceAvailable, isConnecting, isRecording, startRecording, stopRecording } = useVoiceInput({
-    getToken: getVoiceToken,
+    getToken: getVoiceTokenFetch,
     onVolumeChange: (rms) => { volumeRef.current = rms; },
     onTranscript: (text) => {
       setInput((prev) => {
@@ -239,7 +240,7 @@ export function ChatInput({ input, setInput, onSubmit, status, stop, files, setF
               </button>
 
               {/* Plan/Code dropdown */}
-              {codeMode && codeModeSettings && (
+              {codeModeSettings && (
                 <div className="relative" ref={dropdownRef}>
                   <button
                     type="button"
@@ -281,7 +282,7 @@ export function ChatInput({ input, setInput, onSubmit, status, stop, files, setF
               )}
 
               {/* Interactive toggle */}
-              {codeMode && codeModeSettings && !codeModeSettings.isInteractiveActive && (
+              {codeModeSettings && !codeModeSettings.isInteractiveActive && (
                 <button
                   type="button"
                   onClick={codeModeSettings.onInteractiveToggle}

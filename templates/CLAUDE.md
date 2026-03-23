@@ -11,7 +11,7 @@ This directory contains files that get copied into user projects when they run `
 
 ## What belongs here
 
-- **User-editable config**: `config/SOUL.md`, `config/JOB_PLANNING.md`, `config/CRONS.json`, `config/TRIGGERS.json`, etc.
+- **User-editable config**: `config/agent-chat/SYSTEM.md`, `config/agent-job/SOUL.md`, `config/CRONS.json`, `config/TRIGGERS.json`, etc.
 - **GitHub Actions workflows**: `.github/workflows/`
 - **Docker compose**: `docker-compose.yml`
 

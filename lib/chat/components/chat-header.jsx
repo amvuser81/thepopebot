@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { ConfirmDialog } from './ui/confirm-dialog.js';
 import { RenameDialog } from './ui/rename-dialog.jsx';
 import { ChevronDownIcon, StarIcon, StarFilledIcon, PencilIcon, TrashIcon } from './icons.js';
-import { getChatData, getChatDataByWorkspace, renameChat, deleteChat, starChat } from '../actions.js';
+import { renameChat, deleteChat, starChat } from '../actions.js';
 import { useChatNav } from './chat-nav-context.js';
 
 export function ChatHeader({ chatId: chatIdProp, workspaceId }) {
@@ -28,7 +28,8 @@ export function ChatHeader({ chatId: chatIdProp, workspaceId }) {
 
   const fetchMeta = useCallback(() => {
     if (workspaceId) {
-      getChatDataByWorkspace(workspaceId)
+      fetch(`/stream/chat-data-by-workspace/${workspaceId}`)
+        .then(r => r.json())
         .then((data) => {
           if (data?.title && data.title !== 'New Chat') {
             setTitle(data.title);
@@ -40,7 +41,8 @@ export function ChatHeader({ chatId: chatIdProp, workspaceId }) {
       return;
     }
     if (!chatIdProp) return;
-    getChatData(chatIdProp)
+    fetch(`/stream/chat-data/${chatIdProp}`)
+      .then(r => r.json())
       .then((data) => {
         if (data?.title && data.title !== 'New Chat') {
           setTitle(data.title);

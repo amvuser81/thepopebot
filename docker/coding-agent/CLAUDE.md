@@ -110,9 +110,9 @@ Pass whichever key(s) your agent/provider needs:
 
 | Variable | Purpose |
 |----------|---------|
-| `JOB_TITLE` | PR title and commit message |
-| `JOB_DESCRIPTION` | PR body and prompt content |
-| `JOB_ID` | Log directory name (fallback: extracted from branch) |
+| `AGENT_JOB_TITLE` | PR title and commit message |
+| `AGENT_JOB_DESCRIPTION` | PR body and prompt content |
+| `AGENT_JOB_ID` | Log directory name (fallback: extracted from branch) |
 | `SECRETS` | JSON blob of AGENT_* secrets (from GitHub Actions) |
 | `LLM_SECRETS` | JSON blob of AGENT_LLM_* secrets (from GitHub Actions) |
 

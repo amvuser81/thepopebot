@@ -24,9 +24,10 @@ An autonomous AI agent powered by [thepopebot](https://github.com/stephengpope/t
 
 | File | Purpose |
 |------|---------|
-| `config/SOUL.md` | Agent personality and identity |
-| `config/JOB_PLANNING.md` | Event handler LLM system prompt |
-| `config/JOB_AGENT.md` | Agent runtime environment docs |
+| `config/agent-chat/SYSTEM.md` | Agent chat system prompt |
+| `config/code-chat/SYSTEM.md` | Code workspace planning system prompt |
+| `config/agent-job/SOUL.md` | Agent personality and identity |
+| `config/agent-job/AGENT_JOB.md` | Agent runtime environment docs |
 | `config/CRONS.json` | Scheduled job definitions |
 | `config/TRIGGERS.json` | Webhook trigger definitions |
 | `.env` | API keys, tokens, and settings |

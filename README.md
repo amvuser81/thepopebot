@@ -22,36 +22,36 @@ Build autonomous AI agents that work for you 24/7, individually or in teams.
 │                                                                      │
 │  ┌─────────────────┐         ┌─────────────────┐                     │
 │  │  Event Handler  │ ──1──►  │     GitHub      │                     │
-│  │  (creates job)  │         │ (job/* branch)  │                     │
-│  └────────▲────────┘         └────────┬────────┘                     │
-│           │                           │                              │
-│           │                           2 (triggers run-job.yml)       │
-│           │                           │                              │
-│           │                           ▼                              │
-│           │                  ┌─────────────────┐                     │
-│           │                  │  Docker Agent   │                     │
-│           │                  │(Pi/Claude Code) │                     │
-│           │                  └────────┬────────┘                     │
-│           │                           │                              │
-│           │                           3 (creates PR)                 │
-│           │                           │                              │
-│           │                           ▼                              │
-│           │                  ┌─────────────────┐                     │
-│           │                  │     GitHub      │                     │
-│           │                  │   (PR opened)   │                     │
-│           │                  └────────┬────────┘                     │
-│           │                           │                              │
-│           │                           4a (auto-merge.yml)            │
-│           │                           4b (rebuild-event-handler.yml) │
-│           │                           │                              │
-│           5 (notify-pr-complete.yml / │                              │
-│           │  notify-job-failed.yml)   │                              │
-│           └───────────────────────────┘                              │
+│  │ (creates branch)│         │(agent-job/* br) │                     │
+│  └────────▲────────┘         └─────────────────┘                     │
+│           │                                                          │
+│           │  2 (launches Docker container locally)                   │
+│           │                                                          │
+│           ▼                                                          │
+│  ┌─────────────────┐                                                 │
+│  │  Docker Agent   │                                                 │
+│  │(Claude Code/Pi) │                                                 │
+│  └────────┬────────┘                                                 │
+│           │                                                          │
+│           │  3 (commits, pushes, creates PR)                         │
+│           │                                                          │
+│           ▼                                                          │
+│  ┌─────────────────┐                                                 │
+│  │     GitHub      │                                                 │
+│  │   (PR opened)   │                                                 │
+│  └────────┬────────┘                                                 │
+│           │                                                          │
+│           │  4a (auto-merge.yml)                                     │
+│           │  4b (rebuild-event-handler.yml)                          │
+│           │                                                          │
+│           5 (notify-pr-complete.yml →                                │
+│           │  webhook to event handler)                               │
+│           └──────────────────────────►  Event Handler                │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-You interact with your bot via the web chat interface or Telegram (optional). The Event Handler creates a job branch. GitHub Actions spins up a Docker container with the Pi coding agent. The agent does the work, commits the results, and opens a PR. Auto-merge handles the rest. You get a notification when it's done.
+You interact with your bot via the web chat interface or Telegram (optional). The Event Handler creates an agent-job branch and launches a Docker container locally with the coding agent. The agent does the work, commits the results, pushes, and opens a PR. Auto-merge handles the rest. You get a notification when it's done.
 
 ---
 
@@ -106,7 +106,7 @@ The wizard walks you through everything:
 
 - **Web Chat**: Visit your APP_URL to chat with your agent, create jobs, upload files
 - **Telegram** (optional): Run `npm run setup-telegram` to connect a Telegram bot
-- **Webhook**: Send a POST to `/api/create-job` with your API key to create jobs programmatically
+- **Webhook**: Send a POST to `/api/create-agent-job` with your API key to create jobs programmatically
 - **Cron**: Edit `config/CRONS.json` to schedule recurring jobs
 
 ### Chat vs Agent LLM
