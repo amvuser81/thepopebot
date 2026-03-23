@@ -170,6 +170,12 @@ export default function CodePage({ session, codeWorkspaceId }) {
     if (isNaN(port) || port < 1 || port > 65535) return;
     setShowPortInput(false);
     setPortInput('');
+    // Skip if already forwarded
+    if (portForwards.some((p) => p.port === port)) {
+      const existing = portForwards.find((p) => p.port === port);
+      if (existing?.url) window.open(existing.url, '_blank');
+      return;
+    }
     const result = await forwardPort(codeWorkspaceId, port);
     if (result?.success) {
       setPortForwards((prev) => [...prev, { port, url: result.url, createdAt: Date.now() }]);
