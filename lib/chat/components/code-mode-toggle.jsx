@@ -6,6 +6,7 @@ import { GitBranchIcon, ChevronDownIcon, SpinnerIcon, XIcon } from './icons.js';
 import { Combobox } from './ui/combobox.js';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from './ui/dropdown-menu.js';
 import { cn } from '../utils.js';
+import { CodeLogView } from './code-log-view.js';
 
 export const COMMAND_LABELS = {
   'commit-branch': 'Commit Branch',
@@ -155,14 +156,20 @@ export function WorkspaceBar({
   );
 }
 
-export function CommandOutputDialog({ title, output, exitCode, running, onClose }) {
+export function CommandOutputDialog({ title, logs, exitCode, running, onClose }) {
   const outputRef = useRef(null);
+
+  // Lock body scroll while dialog is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
 
   useEffect(() => {
     if (outputRef.current) {
       outputRef.current.scrollTop = outputRef.current.scrollHeight;
     }
-  }, [output]);
+  }, [logs?.length]);
 
   // Close on Escape
   useEffect(() => {
@@ -180,7 +187,12 @@ export function CommandOutputDialog({ title, output, exitCode, running, onClose 
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <span className="text-sm font-semibold">{title}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold">{title}</span>
+            {running && logs?.length > 0 && (
+              <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+            )}
+          </div>
           {!running && (
             <button
               type="button"
@@ -193,14 +205,14 @@ export function CommandOutputDialog({ title, output, exitCode, running, onClose 
         </div>
 
         {/* Body */}
-        <div ref={outputRef} className="flex-1 overflow-auto p-4 min-h-[120px]">
-          {running ? (
+        <div ref={outputRef} className="flex-1 overflow-auto p-4 min-h-[120px] font-mono text-xs">
+          {logs?.length > 0 ? (
+            <CodeLogView logs={logs} />
+          ) : running ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <SpinnerIcon size={14} className="animate-spin" />
-              Running...
+              Starting...
             </div>
-          ) : output ? (
-            <pre className="text-xs font-mono whitespace-pre-wrap break-words text-foreground">{output.trim()}</pre>
           ) : (
             <span className="text-sm text-muted-foreground">No output</span>
           )}
@@ -239,8 +251,16 @@ function WorkspaceCommandButton({ workspaceId, diffStats, onDiffStatsRefresh, on
   };
   const [commandRunning, setCommandRunning] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [commandOutput, setCommandOutput] = useState('');
+  const [commandLogs, setCommandLogs] = useState([]);
   const [commandExitCode, setCommandExitCode] = useState(null);
+  const esRef = useRef(null);
+
+  // Cleanup EventSource on unmount
+  useEffect(() => {
+    return () => {
+      if (esRef.current) { esRef.current.close(); esRef.current = null; }
+    };
+  }, []);
 
   const handleRun = useCallback(async () => {
     if (commandRunning) return;
@@ -250,25 +270,61 @@ function WorkspaceCommandButton({ workspaceId, diffStats, onDiffStatsRefresh, on
     const stats = fresh || diffStats;
     if (!(stats?.insertions || 0) && !(stats?.deletions || 0)) {
       setDialogOpen(true);
-      setCommandOutput('You have no changes.');
+      setCommandLogs([{ stream: 'stderr', raw: 'You have no changes.', parsed: [{ type: 'text', text: 'You have no changes.' }] }]);
       setCommandExitCode(1);
       return;
     }
 
     setCommandRunning(true);
     setDialogOpen(true);
-    setCommandOutput('');
+    setCommandLogs([]);
     setCommandExitCode(null);
+
     try {
-      const { runWorkspaceCommand } = await import('../../code/actions.js');
-      const result = await runWorkspaceCommand(workspaceId, selectedCommand);
-      setCommandOutput(result.output || result.message || '');
-      setCommandExitCode(result.exitCode ?? (result.success ? 0 : 1));
-      onDiffStatsRefresh?.();
+      const { launchWorkspaceCommand } = await import('../../code/actions.js');
+      const launch = await launchWorkspaceCommand(workspaceId, selectedCommand);
+
+      if (!launch.success) {
+        setCommandLogs([{ stream: 'stderr', raw: launch.message || 'Failed to launch', parsed: [{ type: 'text', text: launch.message || 'Failed to launch' }] }]);
+        setCommandExitCode(1);
+        setCommandRunning(false);
+        return;
+      }
+
+      // Connect to shared SSE endpoint for live streaming
+      const es = new EventSource(`/stream/containers/logs?name=${encodeURIComponent(launch.containerName)}&cleanup=true`);
+      esRef.current = es;
+
+      es.addEventListener('log', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          setCommandLogs((prev) => [...prev, data]);
+        } catch {}
+      });
+
+      es.addEventListener('exit', (e) => {
+        try {
+          const { exitCode } = JSON.parse(e.data);
+          setCommandExitCode(exitCode);
+        } catch {
+          setCommandExitCode(-1);
+        }
+        setCommandRunning(false);
+        es.close();
+        esRef.current = null;
+        onDiffStatsRefresh?.();
+      });
+
+      es.addEventListener('error', () => {
+        es.close();
+        esRef.current = null;
+        setCommandRunning(false);
+        if (commandExitCode === null) setCommandExitCode(-1);
+      });
+
     } catch (err) {
-      setCommandOutput(err.message || 'Command failed');
+      setCommandLogs([{ stream: 'stderr', raw: err.message || 'Command failed', parsed: [{ type: 'text', text: err.message || 'Command failed' }] }]);
       setCommandExitCode(1);
-    } finally {
       setCommandRunning(false);
     }
   }, [workspaceId, selectedCommand, commandRunning, diffStats, onDiffStatsRefresh]);
@@ -334,7 +390,7 @@ function WorkspaceCommandButton({ workspaceId, diffStats, onDiffStatsRefresh, on
       {dialogOpen && (
         <CommandOutputDialog
           title={COMMAND_LABELS[selectedCommand]}
-          output={commandOutput}
+          logs={commandLogs}
           exitCode={commandExitCode}
           running={commandRunning}
           onClose={handleDialogClose}

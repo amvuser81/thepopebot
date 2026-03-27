@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { PageLayout } from './page-layout.js';
-import { SpinnerIcon, RefreshIcon, StopIcon, PlayIcon, TrashIcon } from './icons.js';
+import { SpinnerIcon, RefreshIcon, StopIcon, PlayIcon, TrashIcon, XIcon } from './icons.js';
 import { ConfirmDialog } from './ui/confirm-dialog.js';
+import { CodeLogView } from './code-log-view.js';
 import {
   getRunnersStatus,
   stopDockerContainer,
@@ -90,10 +92,125 @@ function StateBadge({ state }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Container Logs Dialog
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ContainerLogsDialog({ containerName, onClose }) {
+  const [logs, setLogs] = useState([]);
+  const [exitCode, setExitCode] = useState(null);
+  const [streaming, setStreaming] = useState(true);
+  const outputRef = useRef(null);
+
+  useEffect(() => {
+    const es = new EventSource(`/stream/containers/logs?name=${encodeURIComponent(containerName)}`);
+
+    es.addEventListener('log', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        setLogs((prev) => [...prev, data]);
+      } catch {}
+    });
+
+    es.addEventListener('exit', (e) => {
+      try {
+        const { exitCode: code } = JSON.parse(e.data);
+        setExitCode(code);
+      } catch {}
+      setStreaming(false);
+      es.close();
+    });
+
+    es.addEventListener('error', () => {
+      setStreaming(false);
+      es.close();
+    });
+
+    return () => es.close();
+  }, [containerName]);
+
+  // Lock body scroll while dialog is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  // Auto-scroll
+  useEffect(() => {
+    if (outputRef.current) {
+      outputRef.current.scrollTop = outputRef.current.scrollHeight;
+    }
+  }, [logs.length]);
+
+  // Escape to close
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="bg-background border border-border rounded-lg shadow-lg w-full max-w-3xl mx-4 flex flex-col max-h-[70vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold truncate">{containerName}</span>
+            {streaming && (
+              <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
+          >
+            <XIcon size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div ref={outputRef} className="flex-1 overflow-auto p-4 min-h-[120px] font-mono text-xs">
+          {logs.length > 0 ? (
+            <CodeLogView logs={logs} />
+          ) : streaming ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <SpinnerIcon size={14} className="animate-spin" />
+              Loading logs...
+            </div>
+          ) : (
+            <span className="text-sm text-muted-foreground">No output</span>
+          )}
+        </div>
+
+        {/* Footer */}
+        {!streaming && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+            <span className={`text-xs font-medium ${exitCode === 0 ? 'text-green-500' : exitCode !== null ? 'text-destructive' : 'text-muted-foreground'}`}>
+              {exitCode !== null ? (exitCode === 0 ? 'Completed' : `Exited with code ${exitCode}`) : 'Stream ended'}
+            </span>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-xs px-3 py-1.5 border border-border text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Docker Container Table Row
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ContainerRow({ container, onRequestStop, isStopping, isStarting }) {
+function ContainerRow({ container, onRequestStop, onShowLogs, isStopping, isStarting }) {
   const [confirmingRemove, setConfirmingRemove] = useState(false);
   const [removingContainer, setRemovingContainer] = useState(false);
   const confirmTimer = useRef(null);
@@ -185,6 +302,12 @@ function ContainerRow({ container, onRequestStop, isStopping, isStarting }) {
             )
           )}
           <button
+            onClick={() => onShowLogs(container.name)}
+            className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium border border-border text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          >
+            Logs
+          </button>
+          <button
             onClick={() => handleAction('remove')}
             disabled={removingContainer}
             className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium border transition-colors disabled:opacity-50 disabled:pointer-events-none ${
@@ -206,7 +329,7 @@ function ContainerRow({ container, onRequestStop, isStopping, isStarting }) {
 // Docker Containers Section
 // ─────────────────────────────────────────────────────────────────────────────
 
-function DockerContainersSection({ containers, loading, onRequestStop, pendingStop, pendingStart }) {
+function DockerContainersSection({ containers, loading, onRequestStop, onShowLogs, pendingStop, pendingStart }) {
   if (loading) {
     return (
       <div className="space-y-4">
@@ -246,6 +369,7 @@ function DockerContainersSection({ containers, loading, onRequestStop, pendingSt
                   key={c.id}
                   container={c}
                   onRequestStop={onRequestStop}
+                  onShowLogs={onShowLogs}
                   isStopping={pendingStop === c.name}
                   isStarting={pendingStart === c.name}
                 />
@@ -347,6 +471,7 @@ export function ContainersPage({ session }) {
   const [stoppingContainer, setStoppingContainer] = useState(null);
   const [pendingStop, setPendingStop] = useState(null);
   const [pendingStart, setPendingStart] = useState(null);
+  const [logsContainer, setLogsContainer] = useState(null);
   const esRef = useRef(null);
 
   const PAGE_SIZE = 25;
@@ -505,6 +630,7 @@ export function ContainersPage({ session }) {
           containers={containers}
           loading={containersLoading}
           onRequestStop={handleRequestAction}
+          onShowLogs={setLogsContainer}
           pendingStop={pendingStop}
           pendingStart={pendingStart}
         />
@@ -560,6 +686,14 @@ export function ContainersPage({ session }) {
           )}
         </div>
       </div>
+
+      {/* Container logs dialog */}
+      {logsContainer && (
+        <ContainerLogsDialog
+          containerName={logsContainer}
+          onClose={() => setLogsContainer(null)}
+        />
+      )}
 
       {/* Stop confirmation dialog */}
       <ConfirmDialog

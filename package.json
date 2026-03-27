@@ -27,6 +27,7 @@
     "./cluster/actions": "./lib/cluster/actions.js",
     "./cluster/stream": "./lib/cluster/stream.js",
     "./containers/stream": "./lib/containers/stream.js",
+    "./containers/logs": "./lib/containers/logs.js",
     "./auth/components": "./lib/auth/components/index.js",
     "./middleware": "./lib/auth/middleware.js",
     "./oauth": "./lib/oauth/helper.js",
