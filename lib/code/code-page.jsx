@@ -322,7 +322,7 @@ export default function CodePage({ session, codeWorkspaceId }) {
               />
 
               {/* Dynamic tabs — draggable */}
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToHorizontalAxis]}>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToHorizontalAxis]} autoScroll={false}>
                 <SortableContext items={dynamicTabIds} strategy={horizontalListSortingStrategy}>
                   {tabs.slice(1).map((tab) => (
                     <SortableTab
