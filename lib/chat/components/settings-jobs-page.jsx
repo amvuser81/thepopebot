@@ -320,7 +320,7 @@ function AddSecretDialog({ open, onAdd, onCancel, onOAuthSuccess, editingSecret 
       tokenUrl: opt.tokenUrl,
       scopes,
       secretType: 'agent_job_secret',
-      returnPath: '/admin/event-handler/agent-jobs',
+      returnPath: '/admin/event-handler/agent-secrets',
     });
 
     if (result?.error) {

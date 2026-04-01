@@ -38,6 +38,7 @@ export function ChatHeader({ chatId: chatIdProp, workspaceId }) {
             setStarred(data.starred || 0);
             setResolvedChatId(data.chatId);
             if (data.chatMode) setChatMode(data.chatMode);
+            document.title = data.title;
           }
         })
         .catch(() => {});
@@ -51,6 +52,7 @@ export function ChatHeader({ chatId: chatIdProp, workspaceId }) {
           setTitle(data.title);
           setStarred(data.starred || 0);
           if (data.chatMode) setChatMode(data.chatMode);
+          document.title = data.title;
         }
       })
       .catch(() => {});
@@ -62,6 +64,7 @@ export function ChatHeader({ chatId: chatIdProp, workspaceId }) {
       if (e.detail.chatId === chatId) {
         setTitle(e.detail.title);
         if (e.detail.chatMode) setChatMode(e.detail.chatMode);
+        document.title = e.detail.title;
       }
     };
     const starHandler = (e) => {
@@ -74,6 +77,7 @@ export function ChatHeader({ chatId: chatIdProp, workspaceId }) {
     return () => {
       window.removeEventListener('chatTitleUpdated', titleHandler);
       window.removeEventListener('chatStarUpdated', starHandler);
+      document.title = 'ThePopeBot';
     };
   }, [fetchMeta, chatId]);
 
